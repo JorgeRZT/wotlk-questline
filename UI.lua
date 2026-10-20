@@ -116,6 +116,7 @@ end
 function QL.OnPlanReady()
     if frame:IsShown() then render() end
     if QL.target then QL.RefreshTarget() end
+    if QL.UpdatePins then QL.UpdatePins() end
 end
 
 frame:SetScript("OnShow", function()
@@ -224,10 +225,13 @@ SlashCmdList["QUESTLINE"] = function(msg)
             DEFAULT_CHAT_FRAME:AddMessage(string.format("  %d  %s", id, q and q.t or "?"))
         end
         DEFAULT_CHAT_FRAME:AddMessage("QuestLine: " .. n .. " skipped quest(s)")
+    elseif msg == "map" then
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: map markers " .. (QL.ToggleMapPins() and "on" or "off"))
     elseif msg == "arrow" then
         if arrow:IsShown() then arrow:Hide() else arrow:Show() end
     elseif msg == "debug" then
         local pos = QL.GetPlayerWorldPos()
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: current map area ID = " .. tostring(GetCurrentMapAreaID and GetCurrentMapAreaID()))
         DEFAULT_CHAT_FRAME:AddMessage(string.format("QuestLine pos: %s | misiones: %d | plan: %s",
             pos and string.format("mapa %d x=%.0f y=%.0f", pos[1], pos[2], pos[3]) or "sin posicion",
             QL.CountQuests(), QL.plan and #QL.plan .. " niveles" or "nil"))

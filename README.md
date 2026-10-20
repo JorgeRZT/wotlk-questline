@@ -40,6 +40,7 @@ The manager should install the zip attached to the latest [release](https://gith
 | Command | Action |
 | --- | --- |
 | `/ql` | Open / close the quest list |
+| `/ql map` | Show / hide the numbered quest markers on the world map |
 | `/ql arrow` | Show / hide the direction arrow |
 | `/ql rate <n>` | Set your server XP multiplier (e.g. `/ql rate 5`); `/ql rate` shows the current value |
 | `/ql skipped` | List the quests you skipped |
@@ -48,6 +49,10 @@ The manager should install the zip attached to the latest [release](https://gith
 | `/ql debug` | Print the detected position and loaded data |
 
 Click a quest in the list to point the arrow at it (pick up, objectives or turn-in, depending on its state). The plan refreshes automatically on level-up, quest log changes and zone changes.
+
+## World map markers
+
+Open the world map (`M`) and the quests of your current level appear as numbered markers in route order (white = pick up, yellow = in progress, green = turn in). The marker shows the next step of each quest: where to pick it up, its objectives, or where to turn it in. Hover for details and click to aim the arrow at it. Markers work on both zone and continent maps; use `/ql map` to toggle them.
 
 ## Completed and skipped quests
 

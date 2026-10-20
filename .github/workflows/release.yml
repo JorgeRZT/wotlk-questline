@@ -16,7 +16,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p dist/QuestLine
-          cp QuestLine.toc Planner.lua Core.lua UI.lua LICENSE dist/QuestLine/
+          cp QuestLine.toc Planner.lua Core.lua UI.lua Map.lua LICENSE dist/QuestLine/
           cp -r Data dist/QuestLine/
           (cd dist && zip -r "../QuestLine-${VERSION}.zip" QuestLine)
       - name: Publish release

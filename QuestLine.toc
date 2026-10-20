@@ -3,7 +3,7 @@
 ## Notes: Lista de misiones por nivel, ordenadas por eficiencia segun tu clase, nivel y posicion.
 ## Notes-esES: Lista de misiones por nivel, ordenadas por eficiencia segun tu clase, nivel y posicion.
 ## Author: Jorge
-## Version: 0.3.0
+## Version: 0.4.0
 ## SavedVariables: QuestLineDB
 
 Data\Zones.lua
@@ -11,3 +11,4 @@ Data\Quests.lua
 Planner.lua
 Core.lua
 UI.lua
+Map.lua

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.0
+- Numbered quest markers on the world map, in route order (`/ql map` to toggle).
+
 ## 0.3.0
 - Completed quests are read from the server (`QueryQuestsCompleted` / `QUEST_QUERY_COMPLETE`) and excluded from the plan.
 - Per-quest **Skip** button to replace a quest with the next best alternative; `/ql skipped` and `/ql unskip`.

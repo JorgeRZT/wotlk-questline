@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build addon zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist/QuestLine
+          cp QuestLine.toc Planner.lua Core.lua UI.lua LICENSE dist/QuestLine/
+          cp -r Data dist/QuestLine/
+          (cd dist && zip -r "../QuestLine-${VERSION}.zip" QuestLine)
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: QuestLine-*.zip
+          generate_release_notes: true

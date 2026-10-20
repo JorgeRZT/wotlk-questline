@@ -1,0 +1,7 @@
+package-as: QuestLine
+
+ignore:
+  - tools
+  - .github
+  - README.md
+  - CHANGELOG.md

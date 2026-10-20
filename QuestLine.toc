@@ -1,0 +1,13 @@
+## Interface: 30300
+## Title: QuestLine
+## Notes: Lista de misiones por nivel, ordenadas por eficiencia segun tu clase, nivel y posicion.
+## Notes-esES: Lista de misiones por nivel, ordenadas por eficiencia segun tu clase, nivel y posicion.
+## Author: Jorge
+## Version: 0.1.0
+## SavedVariables: QuestLineDB
+
+Data\Zones.lua
+Data\Quests.lua
+Planner.lua
+Core.lua
+UI.lua

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.1
+- Fix: the quest list was empty because `Frame:SetShown` does not exist in the 3.3.5 client (UI.lua error).
+
 ## 0.4.0
 - Numbered quest markers on the world map, in route order (`/ql map` to toggle).
 

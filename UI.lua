@@ -52,6 +52,11 @@ local content = CreateFrame("Frame", nil, scroll)
 content:SetSize(380, 10)
 scroll:SetScrollChild(content)
 
+-- Frame:SetShown no existe en 3.3.5
+local function setShown(frame, shown)
+    if shown then frame:Show() else frame:Hide() end
+end
+
 local rows = {}
 local function getRow(i)
     local r = rows[i]
@@ -99,14 +104,14 @@ local function render()
             n = n + 1
             local r = getRow(n)
             r.entry = e
-            r.skip:SetShown(e.status == "new")
+            setShown(r.skip, e.status == "new")
             local q = e.q
             local pt, verb = QL.StepFor(e)
             r.text:SetText(string.format("  %s%s [%d] +%d  |cff9d9d9d%s: %s|r", STATUS_TEXT[e.status] or "", q.t,
                 q.l, e.xp, verb, QL.DescribePoint(pt)))
         end
     end
-    for i = 1, #rows do rows[i]:SetShown(i <= n) end
+    for i = 1, #rows do setShown(rows[i], i <= n) end
     content:SetHeight(math.max(n * ROW_H, 10))
     if n == 0 then
         local r = getRow(1); r.entry = nil; r.skip:Hide(); r.text:SetText("Calculating..."); r:Show()

@@ -84,7 +84,7 @@ function QL.Planner.Build(state, yield)
     -- candidatas estáticas: raza, clase, no hechas, no en curso
     local pending = {}
     for id, q in pairs(Q) do
-        if not done[id] and active[id] == nil and hasBit(q.r, state.raceIndex) and hasBit(q.c, state.classIndex)
+        if not done[id] and active[id] == nil and not (state.skipped and state.skipped[id]) and hasBit(q.r, state.raceIndex) and hasBit(q.c, state.classIndex)
             and (q.d == 0 or q.d == state.side)
             and (q.x > 0 or followers[id]) then
             pending[#pending + 1] = id

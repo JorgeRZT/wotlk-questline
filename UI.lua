@@ -2,7 +2,7 @@
 local _, QL = ...
 
 local ROW_H = 16
-local STATUS_TEXT = { turnin = "|cff00ff00[entregar]|r ", doing = "|cffffff00[en curso]|r " }
+local STATUS_TEXT = { turnin = "|cff00ff00[turn in]|r ", doing = "|cffffff00[in progress]|r " }
 
 local frame = CreateFrame("Frame", "QuestLineFrame", UIParent)
 frame:SetSize(430, 360)
@@ -63,6 +63,22 @@ local function getRow(i)
         r.text = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         r.text:SetPoint("LEFT")
         r.text:SetJustifyH("LEFT")
+        r.text:SetWidth(330)
+        r.skip = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
+        r.skip:SetSize(40, 14)
+        r.skip:SetPoint("RIGHT", r, "RIGHT", 0, 0)
+        r.skip:SetText("Skip")
+        r.skip:SetScript("OnClick", function(self)
+            local e = self:GetParent().entry
+            if e then QL.Skip(e.id) end
+        end)
+        r.skip:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Skip this quest and find another")
+            GameTooltip:AddLine("Hidden until you use /ql unskip", 1, 1, 1)
+            GameTooltip:Show()
+        end)
+        r.skip:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
         r:SetScript("OnClick", function(self) if self.entry then QL.SetTarget(self.entry) end end)
         rows[i] = r
@@ -77,11 +93,13 @@ local function render()
         n = n + 1
         local h = getRow(n)
         h.entry = nil
-        h.text:SetText(string.format("|cffffd100Nivel %d|r  (faltan %d XP)", lv.level, lv.xpNeeded))
+        h.skip:Hide()
+        h.text:SetText(string.format("|cffffd100Level %d|r  (%d XP to go)", lv.level, lv.xpNeeded))
         for _, e in ipairs(lv.quests) do
             n = n + 1
             local r = getRow(n)
             r.entry = e
+            r.skip:SetShown(e.status == "new")
             local q = e.q
             local pt, verb = QL.StepFor(e)
             r.text:SetText(string.format("  %s%s [%d] +%d  |cff9d9d9d%s: %s|r", STATUS_TEXT[e.status] or "", q.t,
@@ -91,7 +109,7 @@ local function render()
     for i = 1, #rows do rows[i]:SetShown(i <= n) end
     content:SetHeight(math.max(n * ROW_H, 10))
     if n == 0 then
-        local r = getRow(1); r.entry = nil; r.text:SetText("Calculando..."); r:Show()
+        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.text:SetText("Calculating..."); r:Show()
     end
 end
 
@@ -187,6 +205,25 @@ SlashCmdList["QUESTLINE"] = function(msg)
         else
             DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r usage: /ql rate <0.1-1000>")
         end
+    elseif strsub(msg, 1, 6) == "unskip" then
+        local value = strtrim(strsub(msg, 7))
+        if value == "all" then
+            QL.Unskip("all")
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: all skipped quests restored")
+        elseif tonumber(value) then
+            QL.Unskip(tonumber(value))
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: quest " .. value .. " restored")
+        else
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: usage /ql unskip <questID|all>")
+        end
+    elseif msg == "skipped" then
+        local n = 0
+        for id in pairs(QL.Skipped()) do
+            n = n + 1
+            local q = QL.Quests[id]
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("  %d  %s", id, q and q.t or "?"))
+        end
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: " .. n .. " skipped quest(s)")
     elseif msg == "arrow" then
         if arrow:IsShown() then arrow:Hide() else arrow:Show() end
     elseif msg == "debug" then

@@ -42,10 +42,17 @@ The manager should install the zip attached to the latest [release](https://gith
 | `/ql` | Open / close the quest list |
 | `/ql arrow` | Show / hide the direction arrow |
 | `/ql rate <n>` | Set your server XP multiplier (e.g. `/ql rate 5`); `/ql rate` shows the current value |
+| `/ql skipped` | List the quests you skipped |
+| `/ql unskip <questID\|all>` | Bring a skipped quest (or all of them) back |
 | `/ql replan` | Recalculate the plan now |
 | `/ql debug` | Print the detected position and loaded data |
 
 Click a quest in the list to point the arrow at it (pick up, objectives or turn-in, depending on its state). The plan refreshes automatically on level-up, quest log changes and zone changes.
+
+## Completed and skipped quests
+
+- **Completed quests** are fetched from the server (`QueryQuestsCompleted`) on every replan and never shown again. Quests already in your log are shown as *in progress* / *turn in* instead of new.
+- **Skip button**: every quest still to be picked up has a **Skip** button. It hides that quest and the planner immediately finds the next best alternative (its chain follow-ups are hidden too, since they need it). Skips are saved across sessions; use `/ql skipped` and `/ql unskip` to review or undo them.
 
 ## XP rate
 

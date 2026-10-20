@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+- Completed quests are read from the server (`QueryQuestsCompleted` / `QUEST_QUERY_COMPLETE`) and excluded from the plan.
+- Per-quest **Skip** button to replace a quest with the next best alternative; `/ql skipped` and `/ql unskip`.
+- UI text is now fully in English.
+
 ## 0.2.0
 - Configurable XP multiplier (`/ql rate <n>` or the box in the window), taken into account by the planner.
 

@@ -13,7 +13,34 @@ Nivel 13  (faltan 3800 XP)
   ...
 ```
 
-Quests are ranked by **XP per second**, taking into account travel time from where you are, the number of objectives, and a bonus for quests that unlock follow-ups in a chain. Nearby quests naturally cluster together.
+Quests are ranked by **XP per second**, taking into account travel time from where you are, the number of objectives, drop chances, and quests that unlock better follow-ups in a chain. Nearby quests naturally cluster together.
+
+## Features
+
+- Per-level quest plan (5 levels ahead) from your class, race/faction, level, XP, quest log and position.
+- Configurable server XP multiplier (`/ql rate`).
+- Completed quests are excluded; locked quests show their prerequisite; manual **Hecha** (done) and **Saltar** (skip) buttons.
+- Gateway quests (low value but unlock a great follow-up) are scored as a chain and marked with `*`.
+- Direction arrow to the next step, aiming at the nearest known spawn of each objective.
+- Numbered quest markers and spawn dots on the world map.
+- 4,553 quests for levels 1-80 from the TrinityCore 3.3.5 database.
+
+## Reading the list
+
+Each row looks like `[entregar] * Quest name [12] +950   Coger: Redridge (31, 62)`:
+
+| Part | Meaning |
+| --- | --- |
+| `[entregar]` / `[en curso]` | Quest already in your log: ready to turn in / still has objectives. No tag = not picked up yet |
+| `*` (blue) | Gateway quest: it mainly unlocks a better follow-up (see the tooltip) |
+| `Quest name` | English name from the data |
+| `[12]` | Quest level (not the minimum level) |
+| `+950` | XP you will get, including your XP rate and the grey-quest reduction |
+| `Coger` / `Completar` / `Entregar` + zone | Next step: pick up, do the objectives, or turn in, with the zone and 0-100 map coordinates of that zone |
+| `Primero: <quest>` | Locked: complete that quest first (clicking points you to it) |
+| **Hecha** / **Saltar** | Mark as already completed / hide it and find an alternative |
+
+Hover a row for pick-up, objective and turn-in zones. Rows are in route order, not sorted by XP.
 
 > The in-game interface is in **Spanish**; quest names come from the TrinityCore data and are in English. The documentation is in English.
 
@@ -33,7 +60,10 @@ The manager should install the zip attached to the latest [release](https://gith
 ### Manual
 1. Download `QuestLine-<version>.zip` from the [latest release](https://github.com/JorgeRZT/wotlk-questline/releases/latest).
 2. Extract it so you end up with `World of Warcraft/Interface/AddOns/QuestLine/QuestLine.toc`.
-3. Restart the game (or reload the UI) and enable **QuestLine** on the character select screen.
+3. Restart the game and enable **QuestLine** on the character select screen.
+
+### Updating
+Replace the `QuestLine` folder with the one from the new release. `/reload` is enough when a release only changes existing files; **restart the game** when the `.toc` changes (new files, new version number) or when in doubt.
 
 > Do **not** use "Download ZIP" on the repository page: the folder would be named `wotlk-questline-main` and WoW would not load it. Rename it to `QuestLine` if you do.
 
@@ -78,8 +108,9 @@ Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box 
 1. Quests are filtered by race, faction, class, minimum level, prerequisites and exclusive groups. Dailies, group/dungeon/raid, PvP, profession and event quests are ignored.
 2. Starting from your position and level, the planner repeatedly picks the quest with the best `XP / time` score, where:
    - XP is multiplied by your configured XP rate, scaled by your level vs. the quest level (grey quests are worth less) and slightly penalised for quests above your level;
-   - time = travel (pick-up → objectives → turn-in) + a per-objective estimate, with extra cost for long trips and continent changes.
-3. XP is accumulated until the level is reached, then the next level list starts. Five levels are planned ahead.
+   - time = travel (pick-up → nearest objective spawns → turn-in) + a per-objective estimate based on drop chances, with extra cost for long trips, continent changes and objectives with unknown location;
+   - quests that unlock a follow-up are scored as a chain: (XP of both) / (time of both).
+3. XP is accumulated until the level is reached, then the next level list starts. Five levels are planned ahead. Everything is recalculated on level-up, quest log changes and zone changes.
 
 ## Troubleshooting
 
@@ -91,6 +122,8 @@ Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box 
 
 - Based on TrinityCore TDB data, not Warmane's own database.
 - Quests started by items or using custom scripts may be missing.
+- About 27% of the quests have at least one objective with no known location (crafted or handed-out items, vendor items, script-driven credits); they are aimed at the quest giver and penalised.
+- Time estimates are heuristics (straight-line distance, flat per-objective cost); real completion times are not measured yet.
 - Zone names for some quests are approximate (world coordinates and the arrow are exact).
 - The rotation direction of the arrow texture has not been verified in-game yet; please open an issue if it points the wrong way.
 
@@ -109,6 +142,8 @@ python3 tools/build_data.py /tmp/tdb Data
 ```
 
 `tools/build_data.py` also accepts AzerothCore `db_world` per-table dumps. Extra DBC tables live in `tools/dbc/`.
+
+See [MEMORY.md](MEMORY.md) for the project history, design decisions and 3.3.5 API notes.
 
 Releases are built automatically: pushing a tag like `v0.1.1` runs `.github/workflows/release.yml` and attaches `QuestLine-<version>.zip`.
 

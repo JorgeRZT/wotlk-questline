@@ -5,3 +5,4 @@ ignore:
   - .github
   - README.md
   - CHANGELOG.md
+  - MEMORY.md

@@ -8,6 +8,7 @@ local PLAN_LEVELS = 5
 local MAX_LEVEL = 80
 local CONTINENT_SWAP_COST = 3000    -- segundos (barco/zepelin) al cambiar de continente
 local LONG_LEG, LONG_LEG_FACTOR = 1500, 1.6   -- trayectos largos: rodeos, tranvias, cambio de zona
+local UNKNOWN_OBJECTIVE_SECONDS = 120   -- objetivo sin ubicación conocida (crafteo, objeto entregado, etc.)
 local QUEST_OVERHEAD = 25           -- segundos por misión (hablar, entregar)
 local SECONDS_PER_OBJECTIVE = 9
 
@@ -47,6 +48,7 @@ local function nearest(points, from)
 end
 
 QL.Planner = {}
+QL.Planner.Nearest = nearest
 
 --- Coste en segundos de hacer la misión q desde pos. Devuelve segundos y el punto final.
 function QL.Planner.Cost(q, pos, speed)
@@ -61,10 +63,14 @@ function QL.Planner.Cost(q, pos, speed)
         cur = to
     end
     leg(s)
-    for i = 1, #q.o do leg(q.o[i]) end
+    for i = 1, #q.o do
+        local p = nearest(q.o[i], cur)   -- cada objetivo es una lista de puntos: se usa el más cercano
+        if p then leg(p) end
+    end
     local f = nearest(q.f, cur)
     leg(f)
-    return meters / speed + crossing + QUEST_OVERHEAD + q.w * SECONDS_PER_OBJECTIVE, f
+    return meters / speed + crossing + QUEST_OVERHEAD + q.w * SECONDS_PER_OBJECTIVE
+        + (q.u or 0) * UNKNOWN_OBJECTIVE_SECONDS, f
 end
 
 --- state: level, xp, xpMax, classIndex, raceIndex, xpRate (multiplicador del servidor, 1 = normal), side (1 Alianza, 2 Horda), completed{id=true}, active{id=complete?true/false}, pos{map,x,y}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+- Objectives keep up to 5 spawn clusters instead of one; the arrow picks the nearest and the world map shows red dots for the selected quest.
+- More item sources: reference loot tables, skinning, pickpocketing; drop chances use the full tables.
+- Quests whose objective locations are unknown are flagged, aimed at the quest giver and penalised in the plan.
+- Data now generated from the TrinityCore TDB 3.3.5 database (`tools/split_tdb.py`).
+
 ## 0.6.1
 - Gateway quests are now scored as a chain with their follow-up (XP and time of both), instead of a flat bonus, and are marked with a blue `*`; the tooltip shows which quest they open.
 - Item objectives now account for drop chance when estimating time.

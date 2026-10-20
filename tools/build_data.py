@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Genera Data/*.lua a partir de volcados SQL de AzerothCore (3.3.5a).
 
-Uso (desde la raiz del proyecto): python3 tools/build_data.py <dir_con_sql_acore> Data
+Uso (desde la raiz del proyecto): python3 tools/build_data.py <dir_con_sql_de_tablas_world> Data
+(volcados por tabla de TrinityCore TDB 3.3.5 o de AzerothCore)
 """
 import csv
 import math
@@ -22,6 +23,8 @@ CLASS_SORTS = {61, 81, 82, 141, 161, 162, 261, 262, 263, 372}
 MAX_SPAWN_POINTS = 3
 GROUP_DROP_CHANCE = 15.0   # % supuesto cuando el objeto está en un grupo de loot sin probabilidad propia
 MAX_ITEM_KILLS = 80
+REFERENCE_ITEM_CHANCE = 25.0   # % supuesto para objetos de tablas de referencia sin probabilidad propia
+OBJECTIVE_POINTS = 5            # puntos (grupos de apariciones) guardados por objetivo
 
 
 def parse_table(name):
@@ -151,7 +154,7 @@ def main():
     spawns = defaultdict(list)  # creature entry -> [(area, x, y)]
     for c in table_dicts("creature"):
         if c["map"] in CONTINENTS:
-            spawns[c["id1"]].append((c["map"], c["position_x"], c["position_y"]))
+            spawns[c.get("id1", c.get("id"))].append((c["map"], c["position_x"], c["position_y"]))
     go_spawns = defaultdict(list)
     for g in table_dicts("gameobject"):
         if g["map"] in CONTINENTS:
@@ -192,24 +195,56 @@ def main():
             pts += (spawns if kind == "c" else go_spawns).get(ident, [])
         return cluster(pts, MAX_SPAWN_POINTS, prefer)
 
-    # --- loot: item -> criaturas / objetos ---
-    ct_loot = {c["entry"]: c["lootid"] for c in table_dicts("creature_template") if c["lootid"]}
-    loot_to_creatures = defaultdict(list)
-    for entry, lootid in ct_loot.items():
-        loot_to_creatures[lootid].append(entry)
-    item_sources = defaultdict(dict)  # item -> {(kind, id): probabilidad de drop en %}
-    for r in table_dicts("creature_loot_template"):
-        if r["Reference"] == 0 and r["Item"] > 0:
-            for ce in loot_to_creatures.get(r["Entry"], []):
-                item_sources[r["Item"]][("c", ce)] = r["Chance"] or GROUP_DROP_CHANCE
+    # --- loot: item -> criaturas / objetos, con probabilidad de drop (%) ---
+    templates = table_dicts("creature_template")
+    item_sources = defaultdict(dict)  # item -> {(kind, id): probabilidad}
+
+    def add_source(item, key, chance):
+        if chance > item_sources[item].get(key, 0):
+            item_sources[item][key] = chance
+
+    def load_loot(table):
+        rows = defaultdict(list)  # loot id -> [(item, chance, reference)]
+        for r in table_dicts(table):
+            rows[r["Entry"]].append((r["Item"], r["Chance"], r["Reference"]))
+        return rows
+
+    reference = load_loot("reference_loot_template")
+
+    def expand(rows, loot_id, outer=100.0, depth=0):
+        """Aplana referencias: devuelve [(item, probabilidad efectiva %)]."""
+        out = []
+        for item, chance, ref in rows.get(loot_id, []):
+            eff = outer * ((chance or REFERENCE_ITEM_CHANCE) / 100.0)
+            if ref and depth < 3:
+                out += expand(reference, ref, outer * ((chance or 100.0) / 100.0), depth + 1)
+            elif item > 0:
+                out.append((item, eff))
+        return out
+
+    def register(table, owners_by_loot, kind):
+        rows = load_loot(table)
+        for loot_id, owners in owners_by_loot.items():
+            for item, chance in expand(rows, loot_id):
+                for o in owners:
+                    add_source(item, (kind, o), chance or GROUP_DROP_CHANCE)
+
+    by_loot, by_skin, by_pick = defaultdict(list), defaultdict(list), defaultdict(list)
+    for c in templates:
+        if c["lootid"]:
+            by_loot[c["lootid"]].append(c["entry"])
+        if c["skinloot"]:
+            by_skin[c["skinloot"]].append(c["entry"])
+        if c["pickpocketloot"]:
+            by_pick[c["pickpocketloot"]].append(c["entry"])
+    register("creature_loot_template", by_loot, "c")
+    register("skinning_loot_template", by_skin, "c")
+    register("pickpocketing_loot_template", by_pick, "c")
     go_loot = defaultdict(list)
     for g in table_dicts("gameobject_template"):
         if g["type"] == 3 and g["Data1"]:
             go_loot[g["Data1"]].append(g["entry"])
-    for r in table_dicts("gameobject_loot_template"):
-        if r["Reference"] == 0 and r["Item"] > 0:
-            for ge in go_loot.get(r["Entry"], []):
-                item_sources[r["Item"]][("g", ge)] = r["Chance"] or GROUP_DROP_CHANCE
+    register("gameobject_loot_template", go_loot, "g")
 
     # --- quests ---
     addon = {r["ID"]: r for r in table_dicts("quest_template_addon")}
@@ -237,25 +272,29 @@ def main():
         row = questxp.get(q["QuestLevel"] if q["QuestLevel"] > 0 else 1)
         if row and 0 <= q["RewardXPDifficulty"] <= 9:
             xp = row[q["RewardXPDifficulty"]]
-        # objetivos
-        objs, work = [], 0
+        # objetivos: cada uno es una lista de puntos; u = objetivos sin ninguna ubicación conocida
+        objs, work, unknown = [], 0, 0
         for i in range(1, 5):
             t, cnt = q[f"RequiredNpcOrGo{i}"], q[f"RequiredNpcOrGoCount{i}"]
             if t and cnt:
-                pts = cluster((spawns if t > 0 else go_spawns).get(abs(t), []), 1, sort)
+                pts = cluster((spawns if t > 0 else go_spawns).get(abs(t), []), OBJECTIVE_POINTS, sort)
                 if pts:
-                    objs.append(pts[0])
+                    objs.append(pts)
+                else:
+                    unknown += 1
                 work += cnt
         for i in range(1, 7):
             it, cnt = q[f"RequiredItemId{i}"], q[f"RequiredItemCount{i}"]
             if it and cnt:
-                pts = []
                 sources = item_sources.get(it, {})
+                pts = []
                 for kind, ident in sources:
                     pts += (spawns if kind == "c" else go_spawns).get(ident, [])
-                pts = cluster(pts, 1, sort)
+                pts = cluster(pts, OBJECTIVE_POINTS, sort)
                 if pts:
-                    objs.append(pts[0])
+                    objs.append(pts)
+                else:
+                    unknown += 1
                 # intentos esperados: unidades necesarias / mejor probabilidad de drop
                 best = max(sources.values()) if sources else 100.0
                 work += min(round(cnt / max(best / 100.0, 0.05)), MAX_ITEM_KILLS)
@@ -263,7 +302,7 @@ def main():
             title=q["LogTitle"], lvl=q["QuestLevel"], min=q["MinLevel"], xp=xp, races=q["AllowableRaces"],
             classes=a.get("AllowableClasses", 0), prev=a.get("PrevQuestID", 0), nxt=q["RewardNextQuest"],
             excl=a.get("ExclusiveGroup", 0), maxlvl=a.get("MaxLevel", 0), start=start_pts, end=end_pts,
-            objs=objs, work=work, sort=sort, side=side, chain=a.get("NextQuestID", 0), flags=q["Flags"],
+            objs=objs, work=work, unknown=unknown, sort=sort, side=side, chain=a.get("NextQuestID", 0), flags=q["Flags"],
         )
     # una misión sin punto de inicio solo es válida si es continuación de cadena
     followers = {q["nxt"] for q in quests.values() if q["nxt"]} | {q["chain"] for q in quests.values() if q["chain"]}
@@ -292,7 +331,10 @@ def main():
         for qid in sorted(quests):
             q = quests[qid]
             f.write(f'[{qid}]={{t={lua_str(q["title"])},l={q["lvl"]},m={q["min"]},x={q["xp"]},r={q["races"]},c={q["classes"]},'
-                    f'd={q["side"]},p={q["prev"]},n={q["nxt"]},e={q["excl"]},w={q["work"]},s={pts(q["start"])},f={pts(q["end"])},o={pts(q["objs"])}')
+                    f'd={q["side"]},p={q["prev"]},n={q["nxt"]},e={q["excl"]},w={q["work"]},s={pts(q["start"])},f={pts(q["end"])},'
+                    f'o={{{",".join(pts(o) for o in q["objs"])}}}')
+            if q["unknown"]:
+                f.write(f',u={q["unknown"]}')
             if q["maxlvl"]:
                 f.write(f',M={q["maxlvl"]}')
             f.write("},\n")

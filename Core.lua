@@ -226,10 +226,28 @@ function QL.StepFor(entry)
         if pre and pre ~= entry then return QL.StepFor(pre) end
     end
     local q = entry.q
-    if entry.status == "turnin" then
-        return q.f[1], "Entregar"
-    elseif entry.status == "doing" then
-        return q.o[1] or q.f[1], q.o[1] and "Completar" or "Entregar"
+    local pos = QL.pos
+    local function pick(points)
+        if not points or #points == 0 then return nil end
+        return pos and QL.Planner.Nearest(points, pos) or points[1]
     end
-    return q.s[1] or q.f[1], "Coger"
+    if entry.status == "turnin" then
+        return pick(q.f), "Entregar", q.f
+    elseif entry.status == "doing" then
+        if q.o[1] then
+            -- el objetivo cuyo punto más cercano queda más a mano
+            local best, bestPts, bestD
+            for _, pts in ipairs(q.o) do
+                local p, d = pick(pts), nil
+                if p and pos and p[1] == pos[1] then
+                    d = (p[2] - pos[2]) ^ 2 + (p[3] - pos[3]) ^ 2
+                end
+                if p and (not bestD or (d and d < bestD) or not best) then best, bestPts, bestD = p, pts, d or bestD end
+            end
+            return best, "Completar", bestPts
+        end
+        -- sin ubicación de objetivos conocida: se apunta a quien da/entrega la misión
+        return pick(q.f), "Completar (ubicación aproximada)", q.f
+    end
+    return pick(q.s) or pick(q.f), "Coger", q.s
 end

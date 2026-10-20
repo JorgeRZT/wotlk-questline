@@ -125,7 +125,11 @@ local function getRow(i)
                 GameTooltip:AddLine("Bloqueada: antes completa \"" .. (pre and pre.t or e.requires) .. "\"", 1, 0.5, 0.25)
             end
             if q.s[1] then GameTooltip:AddLine("Coger: " .. QL.DescribePoint(q.s[1]), 0.8, 0.8, 0.8) end
-            if q.o[1] then GameTooltip:AddLine("Objetivos: " .. QL.DescribePoint(q.o[1]), 0.8, 0.8, 0.8) end
+            if q.o[1] then
+                GameTooltip:AddLine("Objetivos: " .. QL.DescribePoint(q.o[1][1]) ..
+                    (#q.o[1] > 1 and (" y " .. (#q.o[1] - 1) .. " zona(s) más") or ""), 0.8, 0.8, 0.8)
+            end
+            if q.u then GameTooltip:AddLine("Ubicación de algún objetivo desconocida", 1, 0.5, 0.25) end
             if q.f[1] then GameTooltip:AddLine("Entregar: " .. QL.DescribePoint(q.f[1]), 0.8, 0.8, 0.8) end
             GameTooltip:Show()
         end)
@@ -209,13 +213,19 @@ local function rotate(tex, angle)
     tex:SetTexCoord(ULx, ULy, LLx, LLy, URx, URy, LRx, LRy)
 end
 
-local acc = 0
+local acc, retarget = 0, 0
 arrow:SetScript("OnUpdate", function(_, elapsed)
     acc = acc + elapsed
+    retarget = retarget + elapsed
     if acc < 0.05 then return end
     acc = 0
-    local tgt = QL.targetPoint
     local pos = QL.GetPlayerWorldPos()
+    -- con varios puntos posibles se apunta al más cercano, reevaluado cada segundo
+    if retarget > 1 and pos and QL.targetPoints and #QL.targetPoints > 1 then
+        retarget = 0
+        QL.targetPoint = QL.Planner.Nearest(QL.targetPoints, pos) or QL.targetPoint
+    end
+    local tgt = QL.targetPoint
     if not (tgt and pos) then return end
     if tgt[1] ~= pos[1] then
         arrow.text:SetText(QL.target.q.t .. "\n(otro continente)")
@@ -238,7 +248,7 @@ function QL.RefreshTarget()
         end
     end
     QL.target = e
-    QL.targetPoint, QL.targetVerb = QL.StepFor(e)
+    QL.targetPoint, QL.targetVerb, QL.targetPoints = QL.StepFor(e)
 end
 
 function QL.SetTarget(entry)

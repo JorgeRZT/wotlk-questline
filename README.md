@@ -15,9 +15,9 @@ Nivel 13  (faltan 3800 XP)
 
 Quests are ranked by **XP per second**, taking into account travel time from where you are, the number of objectives, and a bonus for quests that unlock follow-ups in a chain. Nearby quests naturally cluster together.
 
-> The in-game interface is in **Spanish**; quest names come from the AzerothCore data and are in English. The documentation is in English.
+> The in-game interface is in **Spanish**; quest names come from the TrinityCore data and are in English. The documentation is in English.
 
-> Built for private servers such as Warmane. Quest data comes from AzerothCore, so a few quests may differ from your realm.
+> Built for private servers such as Warmane. Quest data comes from the TrinityCore TDB, so a few quests may differ from your realm.
 
 ## Installation
 
@@ -57,6 +57,10 @@ Click a quest in the list to point the arrow at it (pick up, objectives or turn-
 
 Open the world map (`M`) and the quests of your current level appear as numbered markers in route order (white = pick up, yellow = in progress, green = turn in). The marker shows the next step of each quest: where to pick it up, its objectives, or where to turn it in. Hover for details and click to aim the arrow at it. Markers work on both zone and continent maps; use `/ql map` to toggle them.
 
+## Objective locations
+
+Kill and collect objectives keep up to **5 spawn clusters** each. The arrow aims at the nearest one (re-evaluated every second) and, when a quest is selected, the world map shows a red dot for every known spawn area. Item sources include creature drops, reference loot tables, skinning, pickpocketing and world objects, using drop chances to estimate the time needed. Objectives whose items are crafted, handed out or come from vendors have no known location: the arrow then points to the quest giver, the row says *ubicación aproximada*, and the planner adds a time penalty.
+
 ## Completed and skipped quests
 
 - **Completed quests** are fetched from the server (`QueryQuestsCompleted`) on every replan and never shown again. Quests already in your log are shown as *en curso* / *entregar* instead of new.
@@ -85,7 +89,7 @@ Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box 
 
 ## Known limitations
 
-- Based on AzerothCore data, not Warmane's database.
+- Based on TrinityCore TDB data, not Warmane's own database.
 - Quests started by items or using custom scripts may be missing.
 - Zone names for some quests are approximate (world coordinates and the arrow are exact).
 - The rotation direction of the arrow texture has not been verified in-game yet; please open an issue if it points the wrong way.
@@ -94,22 +98,23 @@ Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box 
 
 The client is 3.3.5a, so retail-era APIs are not available (for example `Frame:SetShown`, `C_*` namespaces or `SetColorTexture`). Test any new UI code against the 3.3.5 API.
 
-Data files in `Data/` are generated:
+Data files in `Data/` are generated from the [TrinityCore TDB 3.3.5](https://github.com/TrinityCore/TrinityCore/releases) world database (the core family Warmane is based on):
 
 ```bash
-# download db_world SQL dumps from AzerothCore, then:
-python3 tools/build_data.py <dir_with_acore_sql> Data
+# 1. download TDB_full_world_335.<build>.7z from the TrinityCore releases and extract the .sql
+# 2. split the tables we need
+python3 tools/split_tdb.py TDB_full_world_335.<build>.sql /tmp/tdb
+# 3. generate the Lua data
+python3 tools/build_data.py /tmp/tdb Data
 ```
 
-Required dumps: `quest_template`, `quest_template_addon`, `creature_queststarter`, `creature_questender`, `gameobject_queststarter`, `gameobject_questender`, `creature`, `gameobject`, `creature_template`, `gameobject_template`, `creature_loot_template`, `gameobject_loot_template`, `player_xp_for_level`.
-
-Extra DBC tables used live in `tools/dbc/`.
+`tools/build_data.py` also accepts AzerothCore `db_world` per-table dumps. Extra DBC tables live in `tools/dbc/`.
 
 Releases are built automatically: pushing a tag like `v0.1.1` runs `.github/workflows/release.yml` and attaches `QuestLine-<version>.zip`.
 
 ## Credits and licenses
 
 - Addon code: [MIT](LICENSE).
-- Generated quest data is derived from the [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) world database (AGPL-3.0).
+- Generated quest data is derived from the [TrinityCore](https://github.com/TrinityCore/TrinityCore) TDB world database (GPL-2.0) and, in earlier versions, [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) (AGPL-3.0).
 - DBC CSV extracts in `tools/dbc/` come from the [Questie](https://github.com/Questie/Questie) repository (GPL-3.0).
 - World of Warcraft is a trademark of Blizzard Entertainment. This project is not affiliated with Blizzard.

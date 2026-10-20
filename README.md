@@ -41,16 +41,21 @@ The manager should install the zip attached to the latest [release](https://gith
 | --- | --- |
 | `/ql` | Open / close the quest list |
 | `/ql arrow` | Show / hide the direction arrow |
+| `/ql rate <n>` | Set your server XP multiplier (e.g. `/ql rate 5`); `/ql rate` shows the current value |
 | `/ql replan` | Recalculate the plan now |
 | `/ql debug` | Print the detected position and loaded data |
 
 Click a quest in the list to point the arrow at it (pick up, objectives or turn-in, depending on its state). The plan refreshes automatically on level-up, quest log changes and zone changes.
 
+## XP rate
+
+Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box in the window (default `1`, range 0.1-1000; saved account-wide). Quest XP, the XP shown per quest and the number of quests per level all scale with it, so at higher rates you need fewer quests per level and the plan reaches higher levels sooner. Ranking within a single level is largely unchanged, because every quest scales equally; the rate mainly changes how the plan is split across levels and when quests turn grey.
+
 ## How the next quest is chosen
 
 1. Quests are filtered by race, faction, class, minimum level, prerequisites and exclusive groups. Dailies, group/dungeon/raid, PvP, profession and event quests are ignored.
 2. Starting from your position and level, the planner repeatedly picks the quest with the best `XP / time` score, where:
-   - XP is scaled by your level vs. the quest level (grey quests are worth less) and slightly penalised for quests above your level;
+   - XP is multiplied by your configured XP rate, scaled by your level vs. the quest level (grey quests are worth less) and slightly penalised for quests above your level;
    - time = travel (pick-up → objectives → turn-in) + a per-objective estimate, with extra cost for long trips and continent changes.
 3. XP is accumulated until the level is reached, then the next level list starts. Five levels are planned ahead.
 

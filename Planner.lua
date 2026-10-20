@@ -67,7 +67,7 @@ function QL.Planner.Cost(q, pos, speed)
     return meters / speed + crossing + QUEST_OVERHEAD + q.w * SECONDS_PER_OBJECTIVE, f
 end
 
---- state: level, xp, xpMax, classIndex, raceIndex, side (1 Alianza, 2 Horda), completed{id=true}, active{id=complete?true/false}, pos{map,x,y}
+--- state: level, xp, xpMax, classIndex, raceIndex, xpRate (multiplicador del servidor, 1 = normal), side (1 Alianza, 2 Horda), completed{id=true}, active{id=complete?true/false}, pos{map,x,y}
 --- Devuelve una lista de niveles { {level=, xpNeeded=, quests={...}}, ... }
 function QL.Planner.Build(state, yield)
     local Q, XPL = QL.Quests, QL.XPToLevel
@@ -107,6 +107,7 @@ function QL.Planner.Build(state, yield)
         return true
     end
 
+    local rate = state.xpRate or 1
     local level, xp, xpMax = state.level, state.xp, state.xpMax
     local pos = state.pos
     local result = {}
@@ -131,7 +132,7 @@ function QL.Planner.Build(state, yield)
         local q = Q[id]
         if q then
             local ql = q.l > 0 and q.l or level
-            local gain = q.x * xpMultiplier(level, ql)
+            local gain = q.x * xpMultiplier(level, ql) * rate
             current.quests[#current.quests + 1] = { id = id, q = q, xp = gain, status = isComplete and "turnin" or "doing" }
             award(gain)
             done[id] = true
@@ -150,13 +151,13 @@ function QL.Planner.Build(state, yield)
                 keep[#keep + 1] = id
                 local ql = q.l > 0 and q.l or level
                 if ql <= level + 2 and available(id, q, level) then
-                    local gain = q.x * xpMultiplier(level, ql)
+                    local gain = q.x * xpMultiplier(level, ql) * rate
                     local bonus = 0
                     local fl = followers[id]
                     if fl then
                         for j = 1, #fl do
                             local fq = Q[fl[j]]
-                            if fq and fq.x * 0.6 > bonus then bonus = fq.x * 0.6 end
+                            if fq and fq.x * rate * 0.6 > bonus then bonus = fq.x * rate * 0.6 end
                         end
                     end
                     if ql > level then gain = gain * 0.92 end

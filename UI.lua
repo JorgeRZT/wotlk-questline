@@ -24,6 +24,27 @@ title:SetText("QuestLine")
 local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", -2, -2)
 
+local rateLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+rateLabel:SetPoint("TOPRIGHT", -150, -17)
+rateLabel:SetText("XP rate x")
+
+local rateBox = CreateFrame("EditBox", "QuestLineRateBox", frame, "InputBoxTemplate")
+rateBox:SetSize(50, 20)
+rateBox:SetPoint("LEFT", rateLabel, "RIGHT", 8, 0)
+rateBox:SetAutoFocus(false)
+rateBox:SetScript("OnEnterPressed", function(self)
+    if QL.SetRate(self:GetText()) then
+        self:ClearFocus()
+    else
+        self:SetText(tostring(QL.GetRate()))
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r the XP rate must be a number between 0.1 and 1000.")
+    end
+end)
+rateBox:SetScript("OnEscapePressed", function(self)
+    self:SetText(tostring(QL.GetRate()))
+    self:ClearFocus()
+end)
+
 local scroll = CreateFrame("ScrollFrame", "QuestLineScroll", frame, "UIPanelScrollFrameTemplate")
 scroll:SetPoint("TOPLEFT", 14, -36)
 scroll:SetPoint("BOTTOMRIGHT", -32, 14)
@@ -79,7 +100,10 @@ function QL.OnPlanReady()
     if QL.target then QL.RefreshTarget() end
 end
 
-frame:SetScript("OnShow", function() render() end)
+frame:SetScript("OnShow", function()
+    rateBox:SetText(tostring(QL.GetRate()))
+    render()
+end)
 
 -- Flecha ----------------------------------------------------------------
 local arrow = CreateFrame("Frame", "QuestLineArrow", UIParent)
@@ -153,6 +177,16 @@ SlashCmdList["QUESTLINE"] = function(msg)
     msg = strlower(strtrim(msg or ""))
     if msg == "replan" then
         QL.RequestReplan(0)
+    elseif strsub(msg, 1, 4) == "rate" then
+        local value = strtrim(strsub(msg, 5))
+        if value == "" then
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: XP rate is x" .. QL.GetRate())
+        elseif QL.SetRate(value) then
+            rateBox:SetText(tostring(QL.GetRate()))
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: XP rate set to x" .. QL.GetRate())
+        else
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r usage: /ql rate <0.1-1000>")
+        end
     elseif msg == "arrow" then
         if arrow:IsShown() then arrow:Hide() else arrow:Show() end
     elseif msg == "debug" then

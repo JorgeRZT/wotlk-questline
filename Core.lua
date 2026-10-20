@@ -14,6 +14,23 @@ local CONTINENT_MAP = { [1] = 1, [2] = 0, [3] = 530, [4] = 571 }
 QL.plan = nil
 QL.pos = nil
 
+local MIN_RATE, MAX_RATE = 0.1, 1000
+
+--- Multiplicador de experiencia configurado (1 = normal).
+function QL.GetRate()
+    QuestLineDB = QuestLineDB or {}
+    return QuestLineDB.xpRate or 1
+end
+
+function QL.SetRate(rate)
+    rate = tonumber(rate)
+    if not rate or rate < MIN_RATE or rate > MAX_RATE then return false end
+    QuestLineDB = QuestLineDB or {}
+    QuestLineDB.xpRate = rate
+    QL.RequestReplan(0)
+    return true
+end
+
 --- Posición del jugador en coordenadas de mundo {map, x, y}, o nil si no está disponible.
 function QL.GetPlayerWorldPos()
     local mapFrameOpen = WorldMapFrame and WorldMapFrame:IsVisible()
@@ -59,7 +76,7 @@ local function readState()
         level = UnitLevel("player"), xp = UnitXP("player"), xpMax = UnitXPMax("player"),
         side = (UnitFactionGroup("player") == "Horde") and 2 or 1,
         classIndex = CLASS_INDEX[classFile] or 1, raceIndex = RACE_INDEX[raceFile] or 1,
-        completed = completed, active = readLog(), pos = pos,
+        completed = completed, active = readLog(), pos = pos, xpRate = QL.GetRate(),
     }
 end
 

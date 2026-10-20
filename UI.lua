@@ -5,7 +5,7 @@ local ROW_H = 16
 local STATUS_TEXT = { turnin = "|cff00ff00[entregar]|r ", doing = "|cffffff00[en curso]|r " }
 
 local frame = CreateFrame("Frame", "QuestLineFrame", UIParent)
-frame:SetSize(430, 360)
+frame:SetSize(600, 380)
 frame:SetPoint("RIGHT", UIParent, "RIGHT", -40, 0)
 frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
     edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", tile = true, tileSize = 32, edgeSize = 24,
@@ -49,7 +49,7 @@ local scroll = CreateFrame("ScrollFrame", "QuestLineScroll", frame, "UIPanelScro
 scroll:SetPoint("TOPLEFT", 14, -36)
 scroll:SetPoint("BOTTOMRIGHT", -32, 14)
 local content = CreateFrame("Frame", nil, scroll)
-content:SetSize(380, 10)
+content:SetSize(550, 10)
 scroll:SetScrollChild(content)
 
 -- Frame:SetShown no existe en 3.3.5
@@ -68,7 +68,13 @@ local function getRow(i)
         r.text = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         r.text:SetPoint("LEFT")
         r.text:SetJustifyH("LEFT")
-        r.text:SetWidth(330)
+        r.text:SetWidth(280)
+        r.text:SetHeight(ROW_H)
+        r.zone = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        r.zone:SetPoint("LEFT", 285, 0)
+        r.zone:SetJustifyH("LEFT")
+        r.zone:SetWidth(215)
+        r.zone:SetHeight(ROW_H)
         r.skip = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
         r.skip:SetSize(40, 14)
         r.skip:SetPoint("RIGHT", r, "RIGHT", 0, 0)
@@ -86,6 +92,19 @@ local function getRow(i)
         r.skip:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
         r:SetScript("OnClick", function(self) if self.entry then QL.SetTarget(self.entry) end end)
+        r:SetScript("OnEnter", function(self)
+            local e = self.entry
+            if not e then return end
+            local q = e.q
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(string.format("%s [%d]", q.t, q.l))
+            GameTooltip:AddLine(string.format("+%d XP", e.xp), 1, 1, 1)
+            if q.s[1] then GameTooltip:AddLine("Coger: " .. QL.DescribePoint(q.s[1]), 0.8, 0.8, 0.8) end
+            if q.o[1] then GameTooltip:AddLine("Objetivos: " .. QL.DescribePoint(q.o[1]), 0.8, 0.8, 0.8) end
+            if q.f[1] then GameTooltip:AddLine("Entregar: " .. QL.DescribePoint(q.f[1]), 0.8, 0.8, 0.8) end
+            GameTooltip:Show()
+        end)
+        r:SetScript("OnLeave", function() GameTooltip:Hide() end)
         rows[i] = r
     end
     return r
@@ -99,6 +118,7 @@ local function render()
         local h = getRow(n)
         h.entry = nil
         h.skip:Hide()
+        h.zone:SetText("")
         h.text:SetText(string.format("|cffffd100Nivel %d|r  (faltan %d XP)", lv.level, lv.xpNeeded))
         for _, e in ipairs(lv.quests) do
             n = n + 1
@@ -107,14 +127,14 @@ local function render()
             setShown(r.skip, e.status == "new")
             local q = e.q
             local pt, verb = QL.StepFor(e)
-            r.text:SetText(string.format("  %s%s [%d] +%d  |cff9d9d9d%s: %s|r", STATUS_TEXT[e.status] or "", q.t,
-                q.l, e.xp, verb, QL.DescribePoint(pt)))
+            r.text:SetText(string.format("  %s%s [%d] +%d", STATUS_TEXT[e.status] or "", q.t, q.l, e.xp))
+            r.zone:SetText(string.format("%s: %s", verb, QL.DescribePoint(pt)))
         end
     end
     for i = 1, #rows do setShown(rows[i], i <= n) end
     content:SetHeight(math.max(n * ROW_H, 10))
     if n == 0 then
-        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.text:SetText("Calculando..."); r:Show()
+        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.zone:SetText(""); r.text:SetText("Calculando..."); r:Show()
     end
 end
 

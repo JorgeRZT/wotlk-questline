@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+- Quest rows now show the region name in its own column (the text was being cut off); the window is wider.
+- Hovering a quest shows a tooltip with the pick-up, objectives and turn-in regions and coordinates.
+
 ## 0.5.0
 - In-game interface translated to Spanish (window, buttons, tooltips, chat messages). Quest names remain in English.
 

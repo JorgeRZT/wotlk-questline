@@ -78,6 +78,23 @@ function QL.Unskip(id)
     QL.RequestReplan(0)
 end
 
+--- Misiones marcadas como hechas (a mano o detectadas al entregarlas); persisten entre sesiones.
+function QL.Done()
+    QuestLineDB = QuestLineDB or {}
+    QuestLineDB.done = QuestLineDB.done or {}
+    return QuestLineDB.done
+end
+
+function QL.MarkDone(id)
+    QL.Done()[id] = true
+    QL.RequestReplan(0)
+end
+
+function QL.Unmark(id)
+    QL.Done()[id] = nil
+    QL.RequestReplan(0)
+end
+
 -- El servidor entrega las misiones completadas de forma asíncrona (QueryQuestsCompleted -> QUEST_QUERY_COMPLETE).
 local completedCache = {}
 local function refreshCompleted()
@@ -89,12 +106,29 @@ local function refreshCompleted()
     completedCache = t
 end
 
+function QL.CountCompleted()
+    local n = 0
+    for _ in pairs(completedCache) do n = n + 1 end
+    local manual = 0
+    for _ in pairs(QL.Done()) do manual = manual + 1 end
+    return n, manual
+end
+
+local lastLog
+
 local function readLog()
     local active = {}
     for i = 1, GetNumQuestLogEntries() do
         local _, _, _, _, isHeader, _, isComplete, _, questID = GetQuestLogTitle(i)
         if not isHeader and questID then active[questID] = (isComplete == 1) end
     end
+    -- una misión completa que desaparece del registro se ha entregado
+    if lastLog then
+        for id, wasComplete in pairs(lastLog) do
+            if wasComplete and active[id] == nil then QL.Done()[id] = true end
+        end
+    end
+    lastLog = active
     return active
 end
 
@@ -103,11 +137,14 @@ local function readState()
     local _, raceFile = UnitRace("player")
     local pos = QL.GetPlayerWorldPos()
     if not pos then return nil end
+    local completed = {}
+    for id in pairs(completedCache) do completed[id] = true end
+    for id in pairs(QL.Done()) do completed[id] = true end
     return {
         level = UnitLevel("player"), xp = UnitXP("player"), xpMax = UnitXPMax("player"),
         side = (UnitFactionGroup("player") == "Horde") and 2 or 1,
         classIndex = CLASS_INDEX[classFile] or 1, raceIndex = RACE_INDEX[raceFile] or 1,
-        completed = completedCache, active = readLog(), pos = pos, xpRate = QL.GetRate(),
+        completed = completed, active = readLog(), pos = pos, xpRate = QL.GetRate(),
         skipped = QL.Skipped(),
     }
 end
@@ -175,7 +212,19 @@ events:SetScript("OnEvent", function(_, event)
 end)
 
 --- Paso actual de una misión del plan: punto objetivo y texto.
+function QL.FindEntry(id)
+    for _, lv in ipairs(QL.plan or {}) do
+        for _, e in ipairs(lv.quests) do
+            if e.id == id then return e end
+        end
+    end
+end
+
 function QL.StepFor(entry)
+    if entry.requires then
+        local pre = QL.FindEntry(entry.requires)
+        if pre and pre ~= entry then return QL.StepFor(pre) end
+    end
     local q = entry.q
     if entry.status == "turnin" then
         return q.f[1], "Entregar"

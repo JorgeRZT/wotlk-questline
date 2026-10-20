@@ -73,12 +73,28 @@ local function getRow(i)
         r.zone = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         r.zone:SetPoint("LEFT", 285, 0)
         r.zone:SetJustifyH("LEFT")
-        r.zone:SetWidth(215)
+        r.zone:SetWidth(175)
         r.zone:SetHeight(ROW_H)
         r.skip = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
         r.skip:SetSize(40, 14)
         r.skip:SetPoint("RIGHT", r, "RIGHT", 0, 0)
         r.skip:SetText("Saltar")
+        r.done = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
+        r.done:SetSize(40, 14)
+        r.done:SetPoint("RIGHT", r.skip, "LEFT", -2, 0)
+        r.done:SetText("Hecha")
+        r.done:SetScript("OnClick", function(self)
+            local e = self:GetParent().entry
+            if e then QL.MarkDone(e.id) end
+        end)
+        r.done:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Ya la tengo hecha")
+            GameTooltip:AddLine("Se marca como completada y se desbloquean sus continuaciones", 1, 1, 1)
+            GameTooltip:AddLine("Deshacer: /ql undone <id>", 1, 1, 1)
+            GameTooltip:Show()
+        end)
+        r.done:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r.skip:SetScript("OnClick", function(self)
             local e = self:GetParent().entry
             if e then QL.Skip(e.id) end
@@ -99,6 +115,10 @@ local function getRow(i)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetText(string.format("%s [%d]", q.t, q.l))
             GameTooltip:AddLine(string.format("+%d XP", e.xp), 1, 1, 1)
+            if e.requires then
+                local pre = QL.Quests[e.requires]
+                GameTooltip:AddLine("Bloqueada: antes completa \"" .. (pre and pre.t or e.requires) .. "\"", 1, 0.5, 0.25)
+            end
             if q.s[1] then GameTooltip:AddLine("Coger: " .. QL.DescribePoint(q.s[1]), 0.8, 0.8, 0.8) end
             if q.o[1] then GameTooltip:AddLine("Objetivos: " .. QL.DescribePoint(q.o[1]), 0.8, 0.8, 0.8) end
             if q.f[1] then GameTooltip:AddLine("Entregar: " .. QL.DescribePoint(q.f[1]), 0.8, 0.8, 0.8) end
@@ -118,6 +138,7 @@ local function render()
         local h = getRow(n)
         h.entry = nil
         h.skip:Hide()
+        h.done:Hide()
         h.zone:SetText("")
         h.text:SetText(string.format("|cffffd100Nivel %d|r  (faltan %d XP)", lv.level, lv.xpNeeded))
         for _, e in ipairs(lv.quests) do
@@ -125,16 +146,22 @@ local function render()
             local r = getRow(n)
             r.entry = e
             setShown(r.skip, e.status == "new")
+            setShown(r.done, e.status == "new")
             local q = e.q
             local pt, verb = QL.StepFor(e)
             r.text:SetText(string.format("  %s%s [%d] +%d", STATUS_TEXT[e.status] or "", q.t, q.l, e.xp))
-            r.zone:SetText(string.format("%s: %s", verb, QL.DescribePoint(pt)))
+            if e.requires then
+                local pre = QL.Quests[e.requires]
+                r.zone:SetText("|cffff8040Primero: " .. (pre and pre.t or e.requires) .. "|r")
+            else
+                r.zone:SetText(string.format("%s: %s", verb, QL.DescribePoint(pt)))
+            end
         end
     end
     for i = 1, #rows do setShown(rows[i], i <= n) end
     content:SetHeight(math.max(n * ROW_H, 10))
     if n == 0 then
-        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.zone:SetText(""); r.text:SetText("Calculando..."); r:Show()
+        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.done:Hide(); r.zone:SetText(""); r.text:SetText("Calculando..."); r:Show()
     end
 end
 
@@ -242,6 +269,15 @@ SlashCmdList["QUESTLINE"] = function(msg)
         else
             DEFAULT_CHAT_FRAME:AddMessage("QuestLine: uso: /ql unskip <idMisión|all>")
         end
+    elseif strsub(msg, 1, 4) == "done" or strsub(msg, 1, 6) == "undone" then
+        local undo = strsub(msg, 1, 6) == "undone"
+        local id = tonumber(strtrim(strsub(msg, undo and 7 or 5)))
+        if id then
+            if undo then QL.Unmark(id) else QL.MarkDone(id) end
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: misión " .. id .. (undo and " desmarcada" or " marcada como hecha"))
+        else
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: uso: /ql done <id> | /ql undone <id>")
+        end
     elseif msg == "skipped" then
         local n = 0
         for id in pairs(QL.Skipped()) do
@@ -260,6 +296,8 @@ SlashCmdList["QUESTLINE"] = function(msg)
         DEFAULT_CHAT_FRAME:AddMessage(string.format("QuestLine posición: %s | misiones: %d | plan: %s",
             pos and string.format("mapa %d x=%.0f y=%.0f", pos[1], pos[2], pos[3]) or "sin posición",
             QL.CountQuests(), QL.plan and #QL.plan .. " niveles" or "nil"))
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: misiones completadas conocidas = " .. select(1, QL.CountCompleted()) ..
+            " (servidor) + " .. select(2, QL.CountCompleted()) .. " (manuales/detectadas)")
     else
         if frame:IsShown() then frame:Hide() else frame:Show() end
         if not QL.plan then QL.RequestReplan(0) end

@@ -45,6 +45,7 @@ The manager should install the zip attached to the latest [release](https://gith
 | `/ql map` | Show / hide the numbered quest markers on the world map |
 | `/ql arrow` | Show / hide the direction arrow |
 | `/ql rate <n>` | Set your server XP multiplier (e.g. `/ql rate 5`); `/ql rate` shows the current value |
+| `/ql done <id>` / `/ql undone <id>` | Mark a quest as already completed (unlocks its follow-ups) or undo it |
 | `/ql skipped` | List the quests you skipped |
 | `/ql unskip <questID\|all>` | Bring a skipped quest (or all of them) back |
 | `/ql replan` | Recalculate the plan now |
@@ -59,6 +60,8 @@ Open the world map (`M`) and the quests of your current level appear as numbered
 ## Completed and skipped quests
 
 - **Completed quests** are fetched from the server (`QueryQuestsCompleted`) on every replan and never shown again. Quests already in your log are shown as *en curso* / *entregar* instead of new.
+- **Locked quests**: if a quest needs a previous quest that you have not completed yet, its row shows *Primero: <quest>* instead of a location, and clicking it (or the map/arrow) points you to the prerequisite first. Quests with reputation or skill requirements, and quests started from items, are not planned at all.
+- **Done button**: **Hecha** marks a quest as already completed, which unlocks its follow-ups. Quests that disappear from your log while complete are recorded automatically as turned in. Use this if the server's completed-quest list does not load on your realm (`/ql debug` shows how many completed quests are known).
 - **Skip button**: every quest still to be picked up has a **Saltar** (Skip) button. It hides that quest and the planner immediately finds the next best alternative (its chain follow-ups are hidden too, since they need it). Skips are saved across sessions; use `/ql skipped` and `/ql unskip` to review or undo them.
 
 ## XP rate

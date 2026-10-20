@@ -66,7 +66,7 @@ function QL.UpdatePins()
         for index, e in ipairs(level.quests) do
             if shown >= MAX_PINS then break end
             local pt, verb = QL.StepFor(e)
-            if pt and pt[1] == map then
+            if pt and pt[1] == map and not e.requires then
                 local fx = (b.l - pt[3]) / (b.l - b.r)
                 local fy = (b.t - pt[2]) / (b.t - b.b)
                 if fx >= 0 and fx <= 1 and fy >= 0 and fy <= 1 then

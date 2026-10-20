@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+- Quests locked behind an uncompleted prerequisite are now marked *Primero: <quest>*; the arrow and map markers lead to the prerequisite instead of an empty quest giver.
+- New **Hecha** button and `/ql done <id>` / `/ql undone <id>` to mark quests as completed; turn-ins are also detected from the quest log and saved.
+- `/ql debug` shows how many completed quests are known.
+
 ## 0.5.1
 - Quest rows now show the region name in its own column (the text was being cut off); the window is wider.
 - Hovering a quest shows a tooltip with the pick-up, objectives and turn-in regions and coordinates.

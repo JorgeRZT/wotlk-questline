@@ -177,7 +177,9 @@ function QL.Planner.Build(state, yield)
         local q = Q[bestId]
         done[bestId] = true
         pos = bestEnd
-        current.quests[#current.quests + 1] = { id = bestId, q = q, xp = bestGain, status = "new" }
+        -- Requisito aún sin hacer: la misión solo se desbloquea tras completar la anterior del plan.
+        local requires = (q.p > 0 and not completed[q.p]) and q.p or nil
+        current.quests[#current.quests + 1] = { id = bestId, q = q, xp = bestGain, status = "new", requires = requires }
         if award(bestGain) then break end
         picks = picks + 1
         if yield and picks % 4 == 0 then yield() end

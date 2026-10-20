@@ -71,6 +71,12 @@ Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box 
    - time = travel (pick-up → objectives → turn-in) + a per-objective estimate, with extra cost for long trips and continent changes.
 3. XP is accumulated until the level is reached, then the next level list starts. Five levels are planned ahead.
 
+## Troubleshooting
+
+- **Empty quest list, only the "Level N" header and a stray *Skip* button** (v0.4.0): caused by `Frame:SetShown`, which does not exist in the 3.3.5 client. Fixed in v0.4.1; update the addon and `/reload`.
+- **Red Lua errors**: enable them with `/console scriptErrors 1` and open an issue with a screenshot of the message.
+- **Map markers missing or misplaced**: open the world map and run `/ql debug`, then include the printed map area ID in your issue.
+
 ## Known limitations
 
 - Based on AzerothCore data, not Warmane's database.
@@ -79,6 +85,8 @@ Set your realm's quest XP multiplier with `/ql rate <n>` or the **XP rate** box 
 - The rotation direction of the arrow texture has not been verified in-game yet; please open an issue if it points the wrong way.
 
 ## Development
+
+The client is 3.3.5a, so retail-era APIs are not available (for example `Frame:SetShown`, `C_*` namespaces or `SetColorTexture`). Test any new UI code against the 3.3.5 API.
 
 Data files in `Data/` are generated:
 

@@ -2,7 +2,7 @@
 local _, QL = ...
 
 local ROW_H = 16
-local STATUS_TEXT = { turnin = "|cff00ff00[turn in]|r ", doing = "|cffffff00[in progress]|r " }
+local STATUS_TEXT = { turnin = "|cff00ff00[entregar]|r ", doing = "|cffffff00[en curso]|r " }
 
 local frame = CreateFrame("Frame", "QuestLineFrame", UIParent)
 frame:SetSize(430, 360)
@@ -26,7 +26,7 @@ close:SetPoint("TOPRIGHT", -2, -2)
 
 local rateLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 rateLabel:SetPoint("TOPRIGHT", -150, -17)
-rateLabel:SetText("XP rate x")
+rateLabel:SetText("Multiplicador XP x")
 
 local rateBox = CreateFrame("EditBox", "QuestLineRateBox", frame, "InputBoxTemplate")
 rateBox:SetSize(50, 20)
@@ -37,7 +37,7 @@ rateBox:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
     else
         self:SetText(tostring(QL.GetRate()))
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r the XP rate must be a number between 0.1 and 1000.")
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r el multiplicador de XP debe ser un número entre 0.1 y 1000.")
     end
 end)
 rateBox:SetScript("OnEscapePressed", function(self)
@@ -72,15 +72,15 @@ local function getRow(i)
         r.skip = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
         r.skip:SetSize(40, 14)
         r.skip:SetPoint("RIGHT", r, "RIGHT", 0, 0)
-        r.skip:SetText("Skip")
+        r.skip:SetText("Saltar")
         r.skip:SetScript("OnClick", function(self)
             local e = self:GetParent().entry
             if e then QL.Skip(e.id) end
         end)
         r.skip:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText("Skip this quest and find another")
-            GameTooltip:AddLine("Hidden until you use /ql unskip", 1, 1, 1)
+            GameTooltip:SetText("Saltar esta misión y buscar otra")
+            GameTooltip:AddLine("Oculta hasta que uses /ql unskip", 1, 1, 1)
             GameTooltip:Show()
         end)
         r.skip:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -99,7 +99,7 @@ local function render()
         local h = getRow(n)
         h.entry = nil
         h.skip:Hide()
-        h.text:SetText(string.format("|cffffd100Level %d|r  (%d XP to go)", lv.level, lv.xpNeeded))
+        h.text:SetText(string.format("|cffffd100Nivel %d|r  (faltan %d XP)", lv.level, lv.xpNeeded))
         for _, e in ipairs(lv.quests) do
             n = n + 1
             local r = getRow(n)
@@ -114,7 +114,7 @@ local function render()
     for i = 1, #rows do setShown(rows[i], i <= n) end
     content:SetHeight(math.max(n * ROW_H, 10))
     if n == 0 then
-        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.text:SetText("Calculating..."); r:Show()
+        local r = getRow(1); r.entry = nil; r.skip:Hide(); r.text:SetText("Calculando..."); r:Show()
     end
 end
 
@@ -204,23 +204,23 @@ SlashCmdList["QUESTLINE"] = function(msg)
     elseif strsub(msg, 1, 4) == "rate" then
         local value = strtrim(strsub(msg, 5))
         if value == "" then
-            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: XP rate is x" .. QL.GetRate())
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: el multiplicador de XP es x" .. QL.GetRate())
         elseif QL.SetRate(value) then
             rateBox:SetText(tostring(QL.GetRate()))
-            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: XP rate set to x" .. QL.GetRate())
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: multiplicador de XP fijado en x" .. QL.GetRate())
         else
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r usage: /ql rate <0.1-1000>")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff5555QuestLine:|r uso: /ql rate <0.1-1000>")
         end
     elseif strsub(msg, 1, 6) == "unskip" then
         local value = strtrim(strsub(msg, 7))
         if value == "all" then
             QL.Unskip("all")
-            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: all skipped quests restored")
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: todas las misiones saltadas se han restaurado")
         elseif tonumber(value) then
             QL.Unskip(tonumber(value))
-            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: quest " .. value .. " restored")
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: misión " .. value .. " restaurada")
         else
-            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: usage /ql unskip <questID|all>")
+            DEFAULT_CHAT_FRAME:AddMessage("QuestLine: uso: /ql unskip <idMisión|all>")
         end
     elseif msg == "skipped" then
         local n = 0
@@ -229,16 +229,16 @@ SlashCmdList["QUESTLINE"] = function(msg)
             local q = QL.Quests[id]
             DEFAULT_CHAT_FRAME:AddMessage(string.format("  %d  %s", id, q and q.t or "?"))
         end
-        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: " .. n .. " skipped quest(s)")
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: " .. n .. " misión(es) saltada(s)")
     elseif msg == "map" then
-        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: map markers " .. (QL.ToggleMapPins() and "on" or "off"))
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: marcadores del mapa " .. (QL.ToggleMapPins() and "activados" or "desactivados"))
     elseif msg == "arrow" then
         if arrow:IsShown() then arrow:Hide() else arrow:Show() end
     elseif msg == "debug" then
         local pos = QL.GetPlayerWorldPos()
-        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: current map area ID = " .. tostring(GetCurrentMapAreaID and GetCurrentMapAreaID()))
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("QuestLine pos: %s | misiones: %d | plan: %s",
-            pos and string.format("mapa %d x=%.0f y=%.0f", pos[1], pos[2], pos[3]) or "sin posicion",
+        DEFAULT_CHAT_FRAME:AddMessage("QuestLine: ID del área del mapa actual = " .. tostring(GetCurrentMapAreaID and GetCurrentMapAreaID()))
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("QuestLine posición: %s | misiones: %d | plan: %s",
+            pos and string.format("mapa %d x=%.0f y=%.0f", pos[1], pos[2], pos[3]) or "sin posición",
             QL.CountQuests(), QL.plan and #QL.plan .. " niveles" or "nil"))
     else
         if frame:IsShown() then frame:Hide() else frame:Show() end

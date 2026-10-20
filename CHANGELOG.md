@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.0
+- In-game interface translated to Spanish (window, buttons, tooltips, chat messages). Quest names remain in English.
+
 ## 0.4.1
 - Fix: the quest list was empty because `Frame:SetShown` does not exist in the 3.3.5 client (UI.lua error).
 

@@ -178,9 +178,9 @@ end)
 function QL.StepFor(entry)
     local q = entry.q
     if entry.status == "turnin" then
-        return q.f[1], "Turn in"
+        return q.f[1], "Entregar"
     elseif entry.status == "doing" then
-        return q.o[1] or q.f[1], q.o[1] and "Complete" or "Turn in"
+        return q.o[1] or q.f[1], q.o[1] and "Completar" or "Entregar"
     end
-    return q.s[1] or q.f[1], "Pick up"
+    return q.s[1] or q.f[1], "Coger"
 end

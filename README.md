@@ -5,15 +5,17 @@ A World of Warcraft **3.3.5a (WotLK)** addon that tells you which quests to do n
 It reads your class, race/faction, level, XP, completed quests, quest log and **current position**, then simulates your leveling and shows a per-level list:
 
 ```
-Level 12  (3400 XP to go)
-  [Turn in] Quest A [12] +950   Turn in: Redridge (31, 62)
-  Quest B [13] +1150            Pick up: Redridge (33, 60)
-  Quest C [12] +880             Pick up: Redridge (30, 59)
-Level 13  (3800 XP to go)
+Nivel 12  (faltan 3400 XP)
+  [entregar] Quest A [12] +950   Entregar: Redridge (31, 62)
+  Quest B [13] +1150             Coger: Redridge (33, 60)
+  Quest C [12] +880              Coger: Redridge (30, 59)
+Nivel 13  (faltan 3800 XP)
   ...
 ```
 
 Quests are ranked by **XP per second**, taking into account travel time from where you are, the number of objectives, and a bonus for quests that unlock follow-ups in a chain. Nearby quests naturally cluster together.
+
+> The in-game interface is in **Spanish**; quest names come from the AzerothCore data and are in English. The documentation is in English.
 
 > Built for private servers such as Warmane. Quest data comes from AzerothCore, so a few quests may differ from your realm.
 
@@ -56,8 +58,8 @@ Open the world map (`M`) and the quests of your current level appear as numbered
 
 ## Completed and skipped quests
 
-- **Completed quests** are fetched from the server (`QueryQuestsCompleted`) on every replan and never shown again. Quests already in your log are shown as *in progress* / *turn in* instead of new.
-- **Skip button**: every quest still to be picked up has a **Skip** button. It hides that quest and the planner immediately finds the next best alternative (its chain follow-ups are hidden too, since they need it). Skips are saved across sessions; use `/ql skipped` and `/ql unskip` to review or undo them.
+- **Completed quests** are fetched from the server (`QueryQuestsCompleted`) on every replan and never shown again. Quests already in your log are shown as *en curso* / *entregar* instead of new.
+- **Skip button**: every quest still to be picked up has a **Saltar** (Skip) button. It hides that quest and the planner immediately finds the next best alternative (its chain follow-ups are hidden too, since they need it). Skips are saved across sessions; use `/ql skipped` and `/ql unskip` to review or undo them.
 
 ## XP rate
 

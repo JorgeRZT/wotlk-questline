@@ -115,6 +115,11 @@ local function getRow(i)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetText(string.format("%s [%d]", q.t, q.l))
             GameTooltip:AddLine(string.format("+%d XP", e.xp), 1, 1, 1)
+            if e.unlocks then
+                local nx = QL.Quests[e.unlocks]
+                GameTooltip:AddLine(string.format("* Abre: %s [%d] (+%d XP base)", nx and nx.t or e.unlocks,
+                    nx and nx.l or 0, nx and nx.x or 0), 0.4, 0.8, 1)
+            end
             if e.requires then
                 local pre = QL.Quests[e.requires]
                 GameTooltip:AddLine("Bloqueada: antes completa \"" .. (pre and pre.t or e.requires) .. "\"", 1, 0.5, 0.25)
@@ -149,7 +154,8 @@ local function render()
             setShown(r.done, e.status == "new")
             local q = e.q
             local pt, verb = QL.StepFor(e)
-            r.text:SetText(string.format("  %s%s [%d] +%d", STATUS_TEXT[e.status] or "", q.t, q.l, e.xp))
+            r.text:SetText(string.format("  %s%s%s [%d] +%d", STATUS_TEXT[e.status] or "",
+                e.unlocks and "|cff66ccff*|r " or "", q.t, q.l, e.xp))
             if e.requires then
                 local pre = QL.Quests[e.requires]
                 r.zone:SetText("|cffff8040Primero: " .. (pre and pre.t or e.requires) .. "|r")

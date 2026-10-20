@@ -142,7 +142,7 @@ function QL.Planner.Build(state, yield)
     local picks = 0
     while #result <= PLAN_LEVELS do
         local speed = speedFor(level)
-        local bestId, bestScore, bestEnd, bestGain
+        local bestId, bestScore, bestEnd, bestGain, bestUnlocks
         local keep = {}
         for i = 1, #pending do
             local id = pending[i]
@@ -152,22 +152,32 @@ function QL.Planner.Build(state, yield)
                 local ql = q.l > 0 and q.l or level
                 if ql <= level + 2 and available(id, q, level) then
                     local gain = q.x * xpMultiplier(level, ql) * rate
-                    local bonus = 0
+                    if ql > level then gain = gain * 0.92 end
+                    local t, fin = QL.Planner.Cost(q, pos, speed)
+                    local score = gain > 0 and gain / t or 0
+                    local unlocks
+                    -- misión que desbloquea otra: se puntúa la cadena completa (misión + continuación)
                     local fl = followers[id]
                     if fl then
                         for j = 1, #fl do
-                            local fq = Q[fl[j]]
-                            if fq and fq.x * rate * 0.6 > bonus then bonus = fq.x * rate * 0.6 end
+                            local fid = fl[j]
+                            local fq = Q[fid]
+                            if fq and not done[fid] and fq.m <= level and (not fq.M or level <= fq.M)
+                                and not (state.skipped and state.skipped[fid])
+                                and hasBit(fq.r, state.raceIndex) and hasBit(fq.c, state.classIndex)
+                                and (fq.d == 0 or fq.d == state.side) then
+                                local fql = fq.l > 0 and fq.l or level
+                                local fgain = fq.x * xpMultiplier(level, fql) * rate
+                                if fql <= level + 2 and fgain > 0 then
+                                    local ft = QL.Planner.Cost(fq, fin, speed)
+                                    local cs = (gain + fgain) / (t + ft)
+                                    if cs > score then score, unlocks = cs, fid end
+                                end
+                            end
                         end
                     end
-                    if ql > level then gain = gain * 0.92 end
-                    local value = gain + (q.x == 0 and bonus or bonus * 0.3)
-                    if value > 0 then
-                        local t, fin = QL.Planner.Cost(q, pos, speed)
-                        local score = value / t
-                        if not bestScore or score > bestScore then
-                            bestId, bestScore, bestEnd, bestGain = id, score, fin, gain
-                        end
+                    if score > 0 and (not bestScore or score > bestScore) then
+                        bestId, bestScore, bestEnd, bestGain, bestUnlocks = id, score, fin, gain, unlocks
                     end
                 end
             end
@@ -179,7 +189,7 @@ function QL.Planner.Build(state, yield)
         pos = bestEnd
         -- Requisito aún sin hacer: la misión solo se desbloquea tras completar la anterior del plan.
         local requires = (q.p > 0 and not completed[q.p]) and q.p or nil
-        current.quests[#current.quests + 1] = { id = bestId, q = q, xp = bestGain, status = "new", requires = requires }
+        current.quests[#current.quests + 1] = { id = bestId, q = q, xp = bestGain, status = "new", requires = requires, unlocks = bestUnlocks }
         if award(bestGain) then break end
         picks = picks + 1
         if yield and picks % 4 == 0 then yield() end

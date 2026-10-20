@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+- Gateway quests are now scored as a chain with their follow-up (XP and time of both), instead of a flat bonus, and are marked with a blue `*`; the tooltip shows which quest they open.
+- Item objectives now account for drop chance when estimating time.
+
 ## 0.6.0
 - Quests locked behind an uncompleted prerequisite are now marked *Primero: <quest>*; the arrow and map markers lead to the prerequisite instead of an empty quest giver.
 - New **Hecha** button and `/ql done <id>` / `/ql undone <id>` to mark quests as completed; turn-ins are also detected from the quest log and saved.

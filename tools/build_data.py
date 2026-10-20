@@ -20,6 +20,8 @@ FLAG_DAILY, FLAG_WEEKLY = 0x1000, 0x8000
 SPECIAL_REPEATABLE = 0x1
 CLASS_SORTS = {61, 81, 82, 141, 161, 162, 261, 262, 263, 372}
 MAX_SPAWN_POINTS = 3
+GROUP_DROP_CHANCE = 15.0   # % supuesto cuando el objeto está en un grupo de loot sin probabilidad propia
+MAX_ITEM_KILLS = 80
 
 
 def parse_table(name):
@@ -195,11 +197,11 @@ def main():
     loot_to_creatures = defaultdict(list)
     for entry, lootid in ct_loot.items():
         loot_to_creatures[lootid].append(entry)
-    item_sources = defaultdict(set)  # item -> {(kind, id)}
+    item_sources = defaultdict(dict)  # item -> {(kind, id): probabilidad de drop en %}
     for r in table_dicts("creature_loot_template"):
         if r["Reference"] == 0 and r["Item"] > 0:
             for ce in loot_to_creatures.get(r["Entry"], []):
-                item_sources[r["Item"]].add(("c", ce))
+                item_sources[r["Item"]][("c", ce)] = r["Chance"] or GROUP_DROP_CHANCE
     go_loot = defaultdict(list)
     for g in table_dicts("gameobject_template"):
         if g["type"] == 3 and g["Data1"]:
@@ -207,7 +209,7 @@ def main():
     for r in table_dicts("gameobject_loot_template"):
         if r["Reference"] == 0 and r["Item"] > 0:
             for ge in go_loot.get(r["Entry"], []):
-                item_sources[r["Item"]].add(("g", ge))
+                item_sources[r["Item"]][("g", ge)] = r["Chance"] or GROUP_DROP_CHANCE
 
     # --- quests ---
     addon = {r["ID"]: r for r in table_dicts("quest_template_addon")}
@@ -248,12 +250,15 @@ def main():
             it, cnt = q[f"RequiredItemId{i}"], q[f"RequiredItemCount{i}"]
             if it and cnt:
                 pts = []
-                for kind, ident in item_sources.get(it, ()):
+                sources = item_sources.get(it, {})
+                for kind, ident in sources:
                     pts += (spawns if kind == "c" else go_spawns).get(ident, [])
                 pts = cluster(pts, 1, sort)
                 if pts:
                     objs.append(pts[0])
-                work += cnt * 2
+                # intentos esperados: unidades necesarias / mejor probabilidad de drop
+                best = max(sources.values()) if sources else 100.0
+                work += min(round(cnt / max(best / 100.0, 0.05)), MAX_ITEM_KILLS)
         quests[qid] = dict(
             title=q["LogTitle"], lvl=q["QuestLevel"], min=q["MinLevel"], xp=xp, races=q["AllowableRaces"],
             classes=a.get("AllowableClasses", 0), prev=a.get("PrevQuestID", 0), nxt=q["RewardNextQuest"],

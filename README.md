@@ -61,6 +61,7 @@ Open the world map (`M`) and the quests of your current level appear as numbered
 
 - **Completed quests** are fetched from the server (`QueryQuestsCompleted`) on every replan and never shown again. Quests already in your log are shown as *en curso* / *entregar* instead of new.
 - **Locked quests**: if a quest needs a previous quest that you have not completed yet, its row shows *Primero: <quest>* instead of a location, and clicking it (or the map/arrow) points you to the prerequisite first. Quests with reputation or skill requirements, and quests started from items, are not planned at all.
+- **Gateway quests (`*`)**: a quest marked with a blue `*` is worth doing mainly because it unlocks a better one (for example a low-level quest that opens a high-XP follow-up). The planner scores the whole chain (quest plus follow-up) by XP over time, and the tooltip shows what it opens.
 - **Done button**: **Hecha** marks a quest as already completed, which unlocks its follow-ups. Quests that disappear from your log while complete are recorded automatically as turned in. Use this if the server's completed-quest list does not load on your realm (`/ql debug` shows how many completed quests are known).
 - **Skip button**: every quest still to be picked up has a **Saltar** (Skip) button. It hides that quest and the planner immediately finds the next best alternative (its chain follow-ups are hidden too, since they need it). Skips are saved across sessions; use `/ql skipped` and `/ql unskip` to review or undo them.
 
